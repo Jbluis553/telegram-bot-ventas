@@ -4,24 +4,26 @@ import os
 from flask import Flask
 from threading import Thread
 
-# --- CONFIGURACIÓN PARA MANTENER EL BOT VIVO EN RENDER ---
+# --- 1. SERVIDOR WEB PARA RENDER (INDISPENSABLE) ---
 app = Flask('')
 
 @app.route('/')
 def home():
-    return "Bot de Ventas Online - Estatus: Activo"
+    return "Bot de Ventas Online - Estatus: Activo y Live"
 
 def run():
-    # Render asigna el puerto automáticamente
+    # Render asigna el puerto automáticamente en la variable PORT
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
 
-def keep_alive():
-    t = Thread(target=run)
-    t.start()
-# ---------------------------------------------------------
+# Iniciamos el hilo del servidor web ANTES que el bot
+t = Thread(target=run)
+t.daemon = True  # Permite que el hilo se cierre si el proceso principal muere
+t.start()
+# --------------------------------------------------
 
-# Usamos la variable de entorno que configuraste en el panel de Render
+# --- 2. CONFIGURACIÓN DEL BOT ---
+# Lee el Token de la variable de entorno que configuraste en Render
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
@@ -44,6 +46,7 @@ def start(message):
 def responder(message):
     texto = message.text
 
+    # Catálogo de productos
     if texto == "🛒 Ver productos":
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
         btn1 = KeyboardButton("📘 Ebook $5")
@@ -65,9 +68,13 @@ def responder(message):
     elif texto == "🌐 Página web $50":
         bot.send_message(message.chat.id, "🌐 **Landing Page Personalizada**\n\nPrecio: $50 USD\n\nPara comprar, escribe: `COMPRAR WEB`", parse_mode="Markdown")
 
+    # Detección flexible de compra (no importa si es minúscula o mayúscula)
     elif "COMPRAR" in texto.upper():
-        # Tu usuario de contacto para recibir los pagos
-        bot.send_message(message.chat.id, "✅ **¡Excelente elección!**\n\nPor favor, contáctame aquí para finalizar tu compra: @Jbluis553")
+        bot.send_message(
+            message.chat.id, 
+            "✅ **¡Excelente elección!**\n\nHe recibido tu pedido. Por favor, contáctame aquí directamente para finalizar el pago y la entrega:\n\n👉 https://t.me/Jbluis553",
+            parse_mode="Markdown"
+        )
 
     elif texto == "⬅ Volver":
         start(message)
@@ -75,7 +82,8 @@ def responder(message):
     else:
         bot.send_message(message.chat.id, "Por favor, usa los botones del menú para navegar.")
 
+# --- 3. INICIO DEL POLLING ---
 if __name__ == "__main__":
-    print("Iniciando servidor web y polling del bot...")
-    keep_alive() # Inicia el servidor Flask
+    print("Servidor web iniciado en puerto 10000")
+    print("Bot escuchando mensajes de Telegram...")
     bot.infinity_polling()
