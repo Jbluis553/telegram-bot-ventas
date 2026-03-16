@@ -4,25 +4,21 @@ import os
 from flask import Flask
 from threading import Thread
 
-# --- 1. SERVIDOR WEB PARA RENDER ---
+# --- SERVIDOR PARA RENDER ---
 app = Flask('')
-
 @app.route('/')
 def home():
-    return "Bot de Ventas Online - Estatus: Live"
+    return "Bot en línea"
 
 def run():
-    # Render asigna el puerto en la variable PORT automáticamente
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
 
-# Iniciamos el hilo web antes que el bot
 t = Thread(target=run)
 t.daemon = True
 t.start()
-# ----------------------------------
+# ----------------------------
 
-# Configuración del Bot usando tu variable de entorno
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
@@ -48,14 +44,23 @@ def responder(message):
         markup.add(btn4)
         bot.send_message(message.chat.id, "💰 **Productos:**", reply_markup=markup, parse_mode="Markdown")
 
+    # AQUÍ ESTÁ LA CORRECCIÓN: Nombres exactos como en los botones
+    elif texto == "📘 Ebook $5":
+        bot.send_message(message.chat.id, "📘 **Ebook Estrategias Digitales**\nPrecio: $5\n\nEscribe: COMPRAR EBOOK")
+
+    elif texto == "🎨 Logo $10":
+        bot.send_message(message.chat.id, "🎨 **Diseño de Logo**\nPrecio: $10\n\nEscribe: COMPRAR LOGO")
+
+    elif texto == "🌐 Página web $50":
+        bot.send_message(message.chat.id, "🌐 **Página Web**\nPrecio: $50\n\nEscribe: COMPRAR WEB")
+
     elif "COMPRAR" in texto.upper():
-        bot.send_message(message.chat.id, "✅ **Pedido recibido**\n\nContacta aquí para pagar:\nhttps://t.me/Jbluis553", parse_mode="Markdown")
+        bot.send_message(message.chat.id, "✅ **Pedido recibido.** Contacta aquí:\nhttps://t.me/Jbluis553")
 
     elif texto == "⬅ Volver":
         start(message)
     else:
-        bot.send_message(message.chat.id, "Usa los botones del menú.")
+        bot.send_message(message.chat.id, "Usa los botones del menú para navegar.")
 
 if __name__ == "__main__":
-    print("Servidor web y Bot iniciados...")
     bot.infinity_polling()
